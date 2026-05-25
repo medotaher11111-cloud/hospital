@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>مشهد القمر والنجوم</title>
+  <style>
+    body {
+      margin:0;
+      font-family:Tahoma;
+      background:#000 url("assets/background1.jpg") no-repeat center center fixed;
+      background-size:cover;
+      color:#fff;
+      overflow-x:hidden;
+    }
+    h1 {
+      text-align:center;
+      margin:40px;
+      font-size:32px;
+      color:#ff69b4;
+    }
+    section {
+      min-height:auto;
+      display:flex;
+      gap:5px;
+      margin-bottom:10px;
+      justify-content:center;
+      align-items:center;
+      flex-direction:column;
+      font-size:24px;
+    }
+    #stars { width:100%; height:400px; }
+    #moon {
+      width:80px;
+      animation: moveMoon 2s infinite alternate;
+      margin-top:10px;
+      border-radius:100%;
+    }
+    @keyframes moveMoon { from{transform:translateX(0);} to{transform:translateX(200px);} }
+    #baby { width:150px; margin-left:10px; border-radius:100px; }
+    .baby-container { margin-top:5px; }
+    #babyNameStars { font-size:24px; color:#ff69b4; margin-left:10px; text-align:center; border-radius:100px; }
+    #babyNameText { font-size:24px; margin-top:20px; text-align:center; border-radius:100px;}
+    #messagesSection {
+      min-height:100vh;
+      background:transparent;
+      padding:20px;
+      width:100%;
+      margin-top:10px;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      border-radius:100px;
+    }
+    .message-item {
+      margin:5px 0;
+      font-size:14px; /* أصغر */
+    }
+    #messagesList {
+      max-height:200px;
+      overflow-y:auto;
+      margin-top:20px;
+      padding-top:10px;
+      width:80%;
+      text-align:center;
+      border-radius:100px;
+    }
+    .fireworks {
+      color:#ff69b4;
+      font-size:18px;
+      animation: explode 2s ease-out forwards;
+      text-align:center;
+      border-radius:100px;
+    }
+    @keyframes explode { 0%{transform:scale(0.5); opacity:0;} 100%{transform:scale(1.5); opacity:1;} }
+    .baby-container { display:flex; justify-content:center; align-items:center; margin-top:10px; border-radius:100px; }
+    .background-section { display:flex; justify-content:center; align-items:center; height:80vh; border-radius:100px;}
+    .background {
+      width:300px; /* أصغر */
+      height:250px;
+      object-fit:cover;
+      border-radius:50px;
+    }
+    .msg-input-container {
+      display:flex;
+      gap:10px;
+      width:80%;
+      justify-content:center;
+      margin-top:10px;
+      border-radius:100px;
+    }
+    #msgInput, #userNameInput {
+      flex:1;
+      padding:8px;
+      font-size:16px;
+      border-radius:100px;
+    }
+    button {
+      padding:8px 16px;
+      font-size:16px;
+      cursor:pointer;
+      border-radius:100px;
+    }
+
+    /* تعديلات خاصة بالموبايل */
+    @media (max-width: 768px) {
+      h1 { font-size:20px; margin:20px; }
+      .background { width:80%; height:auto; border-radius:20px; }
+      #moon { width:50px; margin-top:5px; }
+      #baby { width:100px; margin-left:5px; }
+      #babyNameStars, #babyNameText { font-size:16px; }
+      #stars { height:150px; }
+      #messagesSection { margin-top:20px; padding:10px; }
+      .msg-input-container { flex-direction:column; gap:5px; width:95%; }
+      #msgInput, #userNameInput { width:100%; font-size:14px; }
+      button { width:100%; font-size:14px; }
+      .message-item { font-size:12px; }
+    }
+  </style>
+
+  <!-- مكتبات Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+  <h1>❤️تم وصول مولود جديد للعائلة </h1>
+
+  <section class="background-section">
+    <img src="assets/photo.jpg" class="background">
+  </section>
+
+  <section>
+    <img src="assets/moon.jpeg" id="moon">
+  </section>
+
+  <section id="night">
+    <canvas id="stars"></canvas>
+    <div class="baby-container" id="babyContainer" style="display:none;">
+      <img src="assets/baby.jpg" id="baby">
+      <div id="babyNameStars">👶 Hamza Ahmed Ebrahem</div>
+    </div>
+  </section>
+
+  <section id="messagesSection" style="display:none;">
+    <div id="babyNameText" style="display:block; margin-bottom:20px; text-align:center;">Hamza Ahmed Ebrahem</div>
+    <h2>💌 شارك تهنئتك</h2>
+    <div class="msg-input-container">
+      <input type="text" id="msgInput" placeholder="اكتب تهنئتك هنا">
+      <input type="text" id="userNameInput" placeholder="اكتب اسمك هنا">
+      <button onclick="addMessage()">إرسال</button>
+    </div>
+    <div id="messagesList"></div>
+  </section>
+
+  <script>
+    const firebaseConfig = {
+  apiKey: "AIzaSyAem5b70alo9LcZwkxsijfPfBtqBjeSPeY",
+  authDomain: "hosiptal-3c230.firebaseapp.com",
+  databaseURL: "https://hosiptal-3c230-default-rtdb.firebaseio.com",
+  projectId: "hosiptal-3c230",
+  storageBucket: "hosiptal-3c230.firebasestorage.app",
+  messagingSenderId: "931313899097",
+  appId: "1:931313899097:web:ba56906d276279a1928348",
+  measurementId: "G-5QMY6JS2FC"
+};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function addMessage() {
+      const msg = document.getElementById('msgInput').value;
+      const userName = document.getElementById('userNameInput').value;
+      if(msg.trim() !== "" && userName.trim() !== "") {
+        const fullMsg = userName + " : " + msg;
+        db.ref("messages").push(fullMsg);
+        document.getElementById('msgInput').value="";
+        document.getElementById('userNameInput').value="";
+      }
+    }
+
+    db.ref("messages").on("child_added", snapshot => {
+      const msg = snapshot.val();
+      const topMsg = document.createElement('div');
+      topMsg.textContent = msg;
+      topMsg.className="fireworks";
+      document.getElementById('babyNameStars').appendChild(topMsg);
+
+      const listMsg = document.createElement('div');
+      listMsg.textContent = msg;
+      listMsg.className = "message-item";
+      document.getElementById('messagesList').appendChild(listMsg);
+    });
+
+    window.onload = function(){
+      let babyCry = new Audio("assets/babycry.mp3");
+      babyCry.volume = 0.2;
+      let doctorVoice = new Audio("assets/doctor.mp3");
+      doctorVoice.volume = 1.0;
+      babyCry.play();
+      doctorVoice.play();
+      starsBackground();
+
+      setTimeout(()=>{ starsAnimation("Hamza Ahmed Ebrahem"); }, 5000);
+      setTimeout(()=>{ document.getElementById("babyContainer").style.display="flex"; }, 7000);
+      setTimeout(()=>{ document.getElementById("messagesSection").style.display="flex"; }, 7000);
+    }
+
+    function starsBackground(){
+      const canvas = document.getElementById("stars");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = 600;
+      let stars = [];
+      for(let i=0; i<900; i++){
+        stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height});
+      }
+      function draw(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle="#fff";
+        stars.forEach(s=>{
+          ctx.beginPath();
+          ctx.arc(s.x,s.y,2,0,Math.PI*2);
+          ctx.fill();
+        });
+        requestAnimationFrame(draw);
+      }
+      draw();
+    }
+
+    function starsAnimation(name){
+      const canvas = document.getElementById("stars");
+      const ctx = canvas.getContext("2d");
+      canvas.width = window.innerWidth;
+      canvas.height = 300;
+
+      const hiddenCanvas = document.createElement("canvas");
+      hiddenCanvas.width = canvas.width;
+      hiddenCanvas.height = canvas.height;
+      const hiddenCtx = hiddenCanvas.getContext("2d");
+
+      hiddenCtx.fillStyle = "#fff";
+      hiddenCtx.font = "40px Tahoma bold";
+      hiddenCtx.fillText(name, canvas.width/2-150, canvas.height/2+30);
+
+      const imageData = hiddenCtx.getImageData(0,0,canvas.width,canvas.height);
+      const points = [];
+
+      for(let y=0; y<canvas.height; y+=2){
+        for(let x=0; x<canvas.width; x+=2){
+          if(imageData.data[(y*canvas.width+x)*4] > 128){
+        points.push({x:x,y:y});
+      }
+    }
+  }
+
+  let stars = points.map(p=>({
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    targetX:p.x,
+    targetY:p.y
+  }));
+
+  function animate(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle="#fff";
+    stars.forEach(s=>{
+      s.x += (s.targetX - s.x)*0.03;
+      s.y += (s.targetY - s.y)*0.03;
+      ctx.beginPath();
+      ctx.arc(s.x,s.y,1.5,0,Math.PI*2);
+      ctx.fill();
+    });
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+
+  
+</script>
+</body>
+</html>
